@@ -1,0 +1,1 @@
+Simple pomodoro app I made. It will prompt for a work and break period and count down the time. Once the time is over a chime will play and it will prompt you to continue. Completed this project today. One of the first projects I have completed without a tutorial.
