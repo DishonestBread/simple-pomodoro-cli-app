@@ -1,79 +1,50 @@
-import json
-import requests
+import sys
+import time
 from typing import Annotated, Optional
 import typer
+import chime
 import os
 import subprocess
 
-app = typer.Typer(help="Weather app")
+app = typer.Typer(help="Pomodoro timer")
 
 @app.command()
-def main(zipcode: Annotated[str, typer.Argument()] = 98225):
-    # goes to zippopatam to get the lat and long
-    zipp_return = requests.get("http://api.zippopotam.us/us/" + zipcode)
-    zipp_data = json.loads(zipp_return.text)
-    lat = zipp_data["places"][0]["latitude"]
-    long = zipp_data["places"][0]["longitude"]
+def main(
+    work_time: Annotated[int, typer.Option(prompt="Work period in minutes: ")],
+    rest_time: Annotated[int, typer.Option(prompt="Break period in minutes: ")],
+):
+    timer(work_time, rest_time)
 
-    # got to api weather gov and gets forecast
-    weather_return = requests.get("https://api.weather.gov/points/" + lat + "," + long)
-    weather_data = json.loads(weather_return.text)
-    forecast_url = weather_data["properties"]["forecast"]
-    forecast_return = requests.get(forecast_url)
-    forecast_data = json.loads(forecast_return.text)
-    forecast = forecast_data["properties"]["periods"][0]["detailedForecast"]
+def timer(work_time: int, rest_time: int):
+    clear()
 
-    print("-" * 30)
-    print(forecast)
+    countdown(work_time * 60)
 
-    if typer.confirm("\n" + "Would you like the forecast for the week?"):
+    if typer.confirm("Type y to start a break or n to end"):
+        clear()
+        countdown(rest_time * 60)
+    else:
+        typer.echo("Pomodoro ended")
+        return
+    
 
-        # get a high and low for the week and print it
-        avg = get_avg_temp(forecast_data)
-        days_rain = get_rain_days(forecast_data)
-        week_forecast = "\n" + "-" * 30 + "\n"
-        week_forecast += "This week's average temp is " + str(round(avg)) + "F. "
-        week_forecast +=  "It will likely rain " + str(days_rain) + "/7 days out of the week." + "\n" * 2
-        week_forecast += "Today: " + forecast_data["properties"]["periods"][0]["detailedForecast"]
+def countdown(total_seconds):
+    for remaining in range(total_seconds, -1, -1):
+        mins, secs = divmod(remaining, 60)
 
-        for i in range(2, 14):
-            if "Night" not in forecast_data["properties"]["periods"][i]["name"]:
-                week_forecast += "\n" * 2
-                week_forecast += forecast_data["properties"]["periods"][i]["name"] + ": "
-                week_forecast += forecast_data["properties"]["periods"][i]["detailedForecast"]
+        sys.stdout.write(f"\rTime remaining: {mins:02d}:{secs:02d}")
+        sys.stdout.flush()
 
-        print(week_forecast)
+        if remaining > 0:
+            time.sleep(1)
 
-def get_avg_temp(json):
-
-    temp_total = 0
-
-    for i in range(2, 14):
-        if "Night" not in json["properties"]["periods"][i]["name"]:
-            temp_total += json["properties"]["periods"][i]["temperature"]
-
-    return temp_total / 7
-
-
-def get_rain_days(json):
-    rainy_days = 0
-
-    if (json["properties"]["periods"][0]["probabilityOfPrecipitation"]["value"] > 35):
-        rainy_days += 1
-
-    for i in range(2, 14):
-        if "Night" not in json["properties"]["periods"][i]["name"]:
-            rain_chance = json["properties"]["periods"][i]["probabilityOfPrecipitation"]["value"]
-            if (rain_chance > 20):
-                rainy_days += 1
-    return rainy_days
-
+    sys.stdout.write("\rTimes up \n")
+    chime.success()
 
 def clear():
     command = "cls" if os.name == "nt" else "clear"
     subprocess.run(command, shell=True)
 
 
-
 if __name__ == "__main__":
-    app()
+        app()

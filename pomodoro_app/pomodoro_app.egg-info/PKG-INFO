@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: pomodoro_app
 Version: 0.1.0
-Summary: A simple terminal Pomodoro timer application
+Summary: Pomodoro timer app
 Requires-Dist: typer>=0.12.0
 Requires-Dist: chime>=0.5.3
