@@ -1,2 +1,2 @@
 [console_scripts]
-pomodoro = main:app
+pomodoro = pomodoro_program.main:app

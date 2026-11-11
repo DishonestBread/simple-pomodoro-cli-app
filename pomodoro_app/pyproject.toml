@@ -8,7 +8,7 @@ dependencies = [
 ]
 
 [project.scripts]
-pomodoro = "main:app"
+pomodoro = "pomodoro_program.main:app"
 
 [build-system]
 requires = ["setuptools>=61.0.0"]

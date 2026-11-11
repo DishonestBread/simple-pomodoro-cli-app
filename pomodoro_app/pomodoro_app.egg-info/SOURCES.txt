@@ -1,4 +1,3 @@
-main.py
 pyproject.toml
 pomodoro_app.egg-info/PKG-INFO
 pomodoro_app.egg-info/SOURCES.txt
@@ -6,3 +5,4 @@ pomodoro_app.egg-info/dependency_links.txt
 pomodoro_app.egg-info/entry_points.txt
 pomodoro_app.egg-info/requires.txt
 pomodoro_app.egg-info/top_level.txt
+pomodoro_program/main.py
