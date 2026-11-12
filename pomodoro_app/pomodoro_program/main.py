@@ -7,43 +7,42 @@ import os
 import subprocess
 import shutil
 import pyfiglet
-
+import math
 
 app = typer.Typer(help="Pomodoro timer")
 
 @app.command()
 def main(
-    work_time: Annotated[int, typer.Option(prompt="Work period in minutes")] = 25,
-    rest_time: Annotated[int, typer.Option(prompt="Break period in minutes")] = 5,
-    sound: Annotated[str, typer.Option(prompt="Sounds (minecraft, lofi, lofi+rain)")] = "",
+    work_time: Annotated[int, typer.Option(prompt="Work period in minutes")] = 50,
+    rest_time: Annotated[int, typer.Option(prompt="Break period in minutes")] = 10,
+    sound: Annotated[str, typer.Option(prompt="Sounds (minecraft, rain, lofi+rain)")] = "",
 ):
-    if (work_time  and rest_time == " "):
-        timer(50, 10)
+    if (sound == ""):
+        timer(work_time, rest_time, 0)
     else:
-        if (sound == ""):
-            timer(work_time,rest_time)
-        else:
-            mpv = start_sound(sound)
-            try: 
-                timer(work_time, rest_time)
-            finally:
-                stop_sound(mpv)
+        mpv = start_sound(sound)
+        try: 
+            timer(work_time, rest_time, 0)
+        finally:
+            stop_sound(mpv)
 
 
-def timer(work_time: int, rest_time: int):
+def timer(work_time, rest_time, session):
+    session += 1
+
     clear()
 
     notify("Timer started")
 
-    countdown(work_time * 60)
+    countdown(work_time * 60, session)
 
-    if typer.confirm("Start break? "):
+    if typer.confirm("Start break?"):
         clear()
-        countdown(rest_time * 60)
+        countdown(rest_time * 60, session)
 
-        if typer.confirm("Start Work? "):
+        if typer.confirm("Start Work?"):
             clear()
-            timer(work_time, rest_time)
+            timer(work_time, rest_time, session)
         else:
             typer.echo("Pomodoro ended")
             return
@@ -52,22 +51,42 @@ def timer(work_time: int, rest_time: int):
         return
     
 
-def countdown(total_seconds):
-    for remaining in range(total_seconds, -1, -1):
-        mins, secs = divmod(remaining, 60)
+def countdown(total_seconds, session):
+    end = time.monotonic() + total_seconds
+    last_shown = None
 
-        width = shutil.get_terminal_size().columns
-        result = pyfiglet.figlet_format(
-            f"Time remaining: {mins:02d}:{secs:02d}", font = "banner3-D", width=width
-        )
-        sys.stdout.write("\033[H\033[J")
-        sys.stdout.write(result)
-        sys.stdout.flush()
+    width = shutil.get_terminal_size().columns
+    spaces = " " * (width//2 - (49//2))
+    height = shutil.get_terminal_size().lines
+    top = "\n" * (height//2 - (8//2) - 3)
 
-        if remaining > 0:
-            time.sleep(1)
+    sys.stdout.write("\033[?25l")
 
-    sys.stdout.write("\rTimes up \n")
+    try:
+        while True:
+            remaining = max(0, math.ceil(end - time.monotonic()))
+
+            if remaining != last_shown:
+                last_shown = remaining
+                mins, secs = divmod(remaining, 60)
+                response = pyfiglet.figlet_format(
+                    f"{mins:02d}:{secs:02d}", font="banner3-D", width=width
+                )
+
+                txt = response.split("\n")
+                spaces_txt = "\n".join(spaces + i for i in txt)
+
+                sys.stdout.write("\033[H\033[J")
+                sys.stdout.write("Session: " + str(session) + "\n" + "Time remaining:\n\n" + top + spaces_txt + "\n")
+                sys.stdout.flush()
+
+            if remaining == 0:
+                break
+
+            time.sleep(0.1)
+    finally:
+        sys.stdout.write("\033[?25h")
+
     notify("Timer end")
     chime.success()
 
@@ -82,7 +101,7 @@ def start_sound(sound):
 
     sound_files = {
         "minecraft" : "/home/dishonestbread/Videos/no more thinking tonight... (minecraft music w⧸ soft rain) [yJ6Lbsmb1lY].webm",
-        "rain" : "Rain Sound On Window with Thunder SoundsㅣHeavy Rain for Sleep, Study and Relaxation, Meditation [mPZkdNFkNps].webm",
+        "rain" : "/home/dishonestbread/Videos/Rain Sound On Window with Thunder SoundsㅣHeavy Rain for Sleep, Study and Relaxation, Meditation [mPZkdNFkNps].webm",
         "lofi+rain" : "/home/dishonestbread/Videos/Dreamy Lofi Rain 🌧️ Rain & Lofi for Insomnia Relief [uEQ7fH7ViXo].webm"
     }
 
